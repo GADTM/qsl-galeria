@@ -10,8 +10,10 @@ exports.handler = async function (event, context) {
 
   const folder = `qsl/${callSign}`;
   const cloudName = "dgv9hbtxd";
-   const apiKey = "148792123799721"; //"535366383571213";
-  const apiSecret = "jYf3wFaZjAhp1UUWGIidSb27ByE"; //"pO3Rp0IPWC352bf-vvlIw1yua88";
+  const apiKey = process.env."148792123799721"; //"apiKey"
+  const apiSecret = process.env."jYf3wFaZjAhp1UUWGIidSb27ByE"; //"apiSecret"
+  // const apiKey = "148792123799721"; //"apiKey"
+  //const apiSecret = "jYf3wFaZjAhp1UUWGIidSb27ByE"; //"apiSecret"
 
   const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image`;
 
