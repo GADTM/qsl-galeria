@@ -1,35 +1,31 @@
+const cloudinary = require('cloudinary').v2;
 
-const axios = require("axios");
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
 
-exports.handler = async function (event, context) {
-  const { callSign } = event.queryStringParameters;
+exports.handler = async (event) => {
+  const callSign = event.queryStringParameters.callSign;
 
   if (!callSign) {
-    return { statusCode: 400, body: "Falta el indicativo" };
+    return {
+      statusCode: 400,
+      body: JSON.stringify({ error: "Indicativo no proporcionado" })
+    };
   }
 
-  const folder = `qsl/${callSign}`;
-  const cloudName = "dgv9hbtxd";
-  const apiKey = process.env."148792123799721"; //"apiKey"
-  const apiSecret = process.env."jYf3wFaZjAhp1UUWGIidSb27ByE"; //"apiSecret"
-  // const apiKey = "148792123799721"; //"apiKey"
-  //const apiSecret = "jYf3wFaZjAhp1UUWGIidSb27ByE"; //"apiSecret"
-
-  const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image`;
-
   try {
-    const res = await axios.get(url, {
-      auth: { username: apiKey, password: apiSecret },
-      params: {
-        prefix: folder,
-        max_results: 100
-      }
-    });
+    const result = await cloudinary.search
+      .expression(`folder=${callSign}`)
+      .sort_by('public_id', 'desc')
+      .max_results(30)
+      .execute();
 
-    const images = res.data.resources.map(img => ({
+    const images = result.resources.map(img => ({
       url: img.secure_url,
-      public_id: img.public_id,
-      format: img.format
+      public_id: img.public_id
     }));
 
     return {
@@ -38,10 +34,10 @@ exports.handler = async function (event, context) {
     };
 
   } catch (error) {
-    console.error("Error desde Cloudinary:", error.message);
+    console.error("Error al buscar imágenes:", error);
     return {
       statusCode: 500,
-      body: "Error al consultar imágenes"
+      body: JSON.stringify({ error: "Error interno al buscar imágenes" })
     };
   }
 };
