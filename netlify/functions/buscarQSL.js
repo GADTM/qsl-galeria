@@ -1,47 +1,38 @@
-const cloudinary = require('cloudinary').v2;
+const axios = require("axios");
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+exports.handler = async function (event) {
+  const { callSign } = event.queryStringParameters;
 
-exports.handler = async (event) => {
+  if (!callSign) {
+    return {
+      statusCode: 400,
+      headers: { "Access-Control-Allow-Origin": "*" },
+      body: JSON.stringify({ error: "Falta el indicativo" })
+    };
+  }
+
+  const folder = `qsl/${callSign}`;
+  const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
+  const apiKey = process.env.CLOUDINARY_API_KEY;
+  const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+  const url = `https://api.cloudinary.com/v1_1/${cloudName}/resources/image`;
+
   try {
-    const callSign = event.queryStringParameters?.callSign;
+    const res = await axios.get(url, {
+      auth: { username: apiKey, password: apiSecret },
+      params: {
+        prefix: folder,
+        max_results: 30,
+        type: "upload" // 👈 esto es clave
+      }
+    });
 
-    if (!callSign) {
-      console.warn("❗ Indicativo no proporcionado");
-      return {
-        statusCode: 400,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "Indicativo no proporcionado" })
-      };
-    }
-
-    console.log(`🔍 Buscando imágenes para: ${callSign}`);
-
-    const result = await cloudinary.search
-      .expression(`folder=qsl/${callSign}`) // Asegurate que el folder sea correcto
-      .sort_by('public_id', 'desc')
-      .max_results(30)
-      .execute();
-
-    if (!result.resources || result.resources.length === 0) {
-      console.warn(`📭 No se encontraron imágenes para ${callSign}`);
-      return {
-        statusCode: 404,
-        headers: { "Access-Control-Allow-Origin": "*" },
-        body: JSON.stringify({ error: "No se encontraron imágenes para este indicativo" })
-      };
-    }
-
-    const images = result.resources.map(img => ({
+    const images = res.data.resources.map(img => ({
       url: img.secure_url,
-      public_id: img.public_id
+      public_id: img.public_id,
+      format: img.format
     }));
-
-    console.log(`✅ Se encontraron ${images.length} imágenes`);
 
     return {
       statusCode: 200,
@@ -50,11 +41,11 @@ exports.handler = async (event) => {
     };
 
   } catch (error) {
-    console.error("💥 Error al buscar imágenes:", error.message || error);
+    console.error("❌ Error desde Cloudinary:", error.response?.data || error.message);
     return {
       statusCode: 500,
       headers: { "Access-Control-Allow-Origin": "*" },
-      body: JSON.stringify({ error: "Error interno al buscar imágenes" })
+      body: JSON.stringify({ error: "Error al consultar imágenes" })
     };
   }
 };
