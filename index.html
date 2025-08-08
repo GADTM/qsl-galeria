@@ -10,11 +10,10 @@
   <div class="header">
     <div class="header-content">
       <img src="logo-gadtm.png" alt="Logo Izquierdo" class="logo-side">
-      <h1>📡 Galería de QSL por Indicativo V1.0</h1>
+      <h1>📡 Galería de QSL por Indicativo</h1>
       <img src="logo-qrz.png" alt="Logo Derecho" class="logo-side">
       <p>Ingresá tu indicativo para ver las QSLs:</p>
       <input type="text" id="callsignInput" placeholder="Ej: LU1ABC">
-      <p>Con el botón derecho del Mouse puede descargar la QSL:</p>
       <button onclick="cargarGaleria()">Buscar</button>
     </div>
     <div class="galeria" id="galeria"></div>
@@ -43,12 +42,23 @@
           return;
         }
 
-        images.forEach(img => {
-          const imgEl = document.createElement("img");
-          imgEl.src = img.url;
-          imgEl.alt = img.public_id;
-          galeria.appendChild(imgEl);
-        });
+        //Muestra la imagen y da la opción de descarga
+		images.forEach(img => {
+			const link = document.createElement("a");
+			link.href = img.url;
+			link.download = `${img.public_id}.jpg`; // Ajustá la extensión si es PNG
+			link.target = "_blank"; // Opcional: abre en nueva pestaña
+
+			const imgEl = document.createElement("img");
+			imgEl.src = img.url;
+			imgEl.alt = img.public_id;
+			imgEl.style.width = "200px"; // Ajustá el tamaño como prefieras
+			imgEl.style.margin = "10px";
+			imgEl.style.cursor = "pointer";
+
+			link.appendChild(imgEl);
+			galeria.appendChild(link);
+		});
 
       } catch (error) {
         galeria.innerHTML = `<p style="color: red;">❌ Error al consultar imágenes para <strong>${callSign}</strong>.</p>`;
@@ -58,3 +68,5 @@
   </script>
 </body>
 </html>
+
+
